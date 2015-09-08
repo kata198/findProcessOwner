@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2015 Tim Savannah GPLv2
+# You should have recieved a copy of LICENSE with this distrubition. Details on the license can be found therein
+#
+# This is a program prints the owner of a process
+
+# vim: set ts=4 sw=4 expandtab
+
+import os
+import sys
+
+
+import ProcessMappingScanner
+
+__version__ = '1.0.0'
+__version_tuple__ = (1, 0, 0)
+
+
+# Ensure output is always parsable by programs, even with errors. Results will always go to stdout, errors always to stderr. First member of a line is always username or "unknown"
+def printOwnerAsName(pid):
+    ret = 0
+    ownerInfo = ProcessMappingScanner.getProcessOwner(pid)
+    if ownerInfo is None:
+        sys.stdout.write('unknown')
+        sys.stdout.flush()
+        sys.stderr.write(' (Could not determine owner of pid %s)' %(str(pid),))
+        sys.stderr.flush()
+        ret = 1
+    elif ownerInfo['name'] is None:
+        sys.stdout.write(str(ownerInfo['uid']))
+        sys.stdout.flush()
+        sys.stderr.write(' (Could not convert uid %s to name)' %(str(ownerInfo['uid']),))
+        sys.stderr.flush()
+        ret = 1
+    else:
+        sys.stdout.write(ownerInfo['name'])
+
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+
+    return ret
+    
+
+def printOwnerAsUid(pid):
+    ret = 0
+    ownerInfo = ProcessMappingScanner.getProcessOwner(pid)
+    if ownerInfo is None:
+        sys.stdout.write('unknown')
+        sys.stdout.flush()
+        sys.stderr.write(' (Could not determine owner of pid %s)' %(str(pid),))
+        ret = 1
+    else:
+        sys.stdout.write(str(ownerInfo['uid']))
+
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+
+    return ret
+
+
+if __name__ == '__main__':
+
+    if '--version' in sys.argv:
+        sys.stdout.write('findProcessesOwner version %s by Tim Savannah\n' %(__version__,))
+        sys.exit(0)
+
+    if '--uid' in sys.argv:
+        handleFunction = printOwnerAsUid
+        sys.argv.remove('--uid')
+    else:
+        handleFunction = printOwnerAsName
+
+    if len(sys.argv) < 2 or '--help' in sys.argv:
+        sys.stderr.write('''Usage: findProcessOwner (options) [pid1] (optional: pid2, pid3)
+
+Prints the owner (account running) processes, given their pids. They are returned one per line on stdout.
+ Any errors reported go to stderr. If no owner can be determined, stdout will contain "unknown" for that line.
+ Thus your program can always ensure parsable output by parsing stdout, one-entry per line, and checking for "unknown".
+
+ If a username can not be determined (like user deleted, or uid changed, etc) a pid will be printed.
+
+    Options:
+
+       --uid                  Print the UID instead of the username
+       --version              Print the version
+
+
+Examples: 
+  findProcessOwner 1234             
+  findProcessOwner --uid 1234 3231 
+
+Return:
+  Returns zero if all searches were successful, otherwise non-zero.
+
+''')
+        sys.exit(1)
+
+
+    pids = sys.argv[1:]
+
+    numFailures = 0
+
+    for pid in pids:
+        numFailures += handleFunction(pid)
+
+    if numFailures > 0:
+        sys.exit(1)
+    else:
+        sys.exit(0)
