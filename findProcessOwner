@@ -13,8 +13,8 @@ import sys
 
 import ProcessMappingScanner
 
-__version__ = '1.0.0'
-__version_tuple__ = (1, 0, 0)
+__version__ = '1.0.1'
+__version_tuple__ = (1, 0, 1)
 
 
 # Ensure output is always parsable by programs, even with errors. Results will always go to stdout, errors always to stderr. First member of a line is always username or "unknown"
